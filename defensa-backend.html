@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defensa Backend — Hotel Transilvania</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --border: #30363d;
+    --accent: #f97316;
+    --accent2: #fb923c;
+    --green: #3fb950;
+    --blue: #58a6ff;
+    --purple: #bc8cff;
+    --yellow: #e3b341;
+    --red: #f85149;
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --code-bg: #0d1117;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), #c2410c);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  header h1 {
+    font-size: 17px; font-weight: 700;
+    color: var(--text);
+  }
+
+  header span {
+    font-size: 12px; color: var(--muted);
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 2px 8px; border-radius: 20px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 12px 0;
+  }
+
+  .sidebar-section {
+    margin-bottom: 4px;
+  }
+
+  .sidebar-label {
+    font-size: 11px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 6px 16px 4px;
+  }
+
+  .file-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 6px 16px;
+    cursor: pointer;
+    text-align: left;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .file-btn:hover {
+    background: var(--surface2);
+    color: var(--accent2);
+  }
+
+  .file-btn.active {
+    background: rgba(249,115,22,0.1);
+    border-left-color: var(--accent);
+    color: var(--accent2);
+  }
+
+  .file-icon { font-size: 13px; flex-shrink: 0; }
+
+  /* MAIN */
+  .main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .empty-state .big-icon { font-size: 48px; }
+
+  /* FILE VIEW */
+  .file-view { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  .file-view.visible { display: flex; }
+
+  .file-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .file-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .file-path span { color: var(--text); }
+
+  .btn-explain {
+    background: linear-gradient(135deg, var(--accent), #c2410c);
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-explain:hover { opacity: 0.9; }
+  .btn-explain:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .content-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .code-panel {
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    background: var(--code-bg);
+  }
+
+  pre {
+    padding: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #c9d1d9;
+  }
+
+  /* syntax highlight rudimentario */
+  .kw  { color: #ff7b72; }
+  .str { color: #a5d6ff; }
+  .cmt { color: #8b949e; font-style: italic; }
+  .fn  { color: #d2a8ff; }
+  .num { color: #79c0ff; }
+
+  /* EXPLANATION PANEL */
+  .explain-panel {
+    overflow-y: auto;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .explain-placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .explain-placeholder .icon { font-size: 36px; }
+
+  .explain-content {
+    padding: 20px;
+    display: none;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .explain-content.visible { display: flex; }
+
+  .section-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .section-card-header {
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .section-card-body {
+    padding: 14px;
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(249,115,22,0.15);
+    color: var(--accent2);
+    border: 1px solid rgba(249,115,22,0.3);
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .badge.green { background: rgba(63,185,80,0.15); color: var(--green); border-color: rgba(63,185,80,0.3); }
+  .badge.blue  { background: rgba(88,166,255,0.15); color: var(--blue); border-color: rgba(88,166,255,0.3); }
+  .badge.purple { background: rgba(188,140,255,0.15); color: var(--purple); border-color: rgba(188,140,255,0.3); }
+
+  .loading-bar {
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--purple), var(--blue));
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+    border-radius: 2px;
+    margin: 0 20px 20px;
+    display: none;
+  }
+
+  .loading-bar.active { display: block; }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid rgba(249,115,22,0.3);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: none;
+  }
+
+  .spinner.active { display: block; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Question buttons */
+  .question-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 14px 14px;
+  }
+
+  .chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .chip:hover {
+    border-color: var(--accent);
+    color: var(--accent2);
+  }
+
+  .qa-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .qa-question {
+    color: var(--accent2);
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+
+  ul.points { padding-left: 18px; }
+  ul.points li { margin-bottom: 6px; }
+
+  code.inline {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--accent2);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🏨</div>
+  <h1>Defensa Backend — Hotel Transilvania</h1>
+  <span>Node.js · Prisma · PostgreSQL</span>
+</header>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Núcleo</div>
+      <button class="file-btn" onclick="selectFile('index')"><span class="file-icon">⚙️</span>index.js</button>
+      <button class="file-btn" onclick="selectFile('authMiddleware')"><span class="file-icon">🔒</span>authMiddleware.js</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Controllers</div>
+      <button class="file-btn" onclick="selectFile('authController')"><span class="file-icon">👤</span>authController.js</button>
+      <button class="file-btn" onclick="selectFile('clientesController')"><span class="file-icon">🧑‍💼</span>clientesController.js</button>
+      <button class="file-btn" onclick="selectFile('habitacionesController')"><span class="file-icon">🛏️</span>habitacionesController.js</button>
+      <button class="file-btn" onclick="selectFile('solicitudesController')"><span class="file-icon">📋</span>solicitudesController.js</button>
+      <button class="file-btn" onclick="selectFile('facturasController')"><span class="file-icon">🧾</span>facturasController.js</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Routes</div>
+      <button class="file-btn" onclick="selectFile('authRoutes')"><span class="file-icon">🛣️</span>auth.js</button>
+      <button class="file-btn" onclick="selectFile('clientesRoutes')"><span class="file-icon">🛣️</span>clientes.js</button>
+      <button class="file-btn" onclick="selectFile('habitacionesRoutes')"><span class="file-icon">🛣️</span>habitaciones.js</button>
+      <button class="file-btn" onclick="selectFile('solicitudesRoutes')"><span class="file-icon">🛣️</span>solicitudes.js</button>
+      <button class="file-btn" onclick="selectFile('facturasRoutes')"><span class="file-icon">🛣️</span>facturas.js</button>
+      <button class="file-btn" onclick="selectFile('recoverRoutes')"><span class="file-icon">🛣️</span>recover.js</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Prisma / Base de datos</div>
+      <button class="file-btn" onclick="selectFile('schema')"><span class="file-icon">🗄️</span>schema.prisma</button>
+      <button class="file-btn" onclick="selectFile('prismaClient')"><span class="file-icon">🔌</span>client.js</button>
+      <button class="file-btn" onclick="selectFile('seed')"><span class="file-icon">🌱</span>seed.js</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Utilidades</div>
+      <button class="file-btn" onclick="selectFile('mailer')"><span class="file-icon">📧</span>mailer.js</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- Empty state -->
+    <div class="empty-state" id="emptyState">
+      <div class="big-icon">👈</div>
+      <strong>Selecciona un archivo</strong>
+      <span>Elige cualquier archivo del backend para ver su código<br>y obtener una explicación con IA para tu defensa.</span>
+    </div>
+
+    <!-- File view -->
+    <div class="file-view" id="fileView">
+      <div class="file-header">
+        <div class="file-path" id="filePath">backend / <span id="filePathName"></span></div>
+        <button class="btn-explain" id="btnExplain" onclick="explainFile()">
+          <div class="spinner" id="spinner"></div>
+          <span id="btnText">✨ Explicar para defensa</span>
+        </button>
+      </div>
+      <div class="content-area">
+        <div class="code-panel">
+          <pre id="codeDisplay"></pre>
+        </div>
+        <div class="explain-panel">
+          <div class="loading-bar" id="loadingBar"></div>
+          <div class="explain-placeholder" id="explainPlaceholder">
+            <div class="icon">🤖</div>
+            <strong>Presiona "Explicar para defensa"</strong>
+            <span>La IA analizará este archivo y te dará todo lo que necesitas para defenderlo ante tus profesores.</span>
+          </div>
+          <div class="explain-content" id="explainContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const FILES = {
+  index: {
+    name: 'index.js',
+    path: 'backend / index.js',
+    role: 'Núcleo',
+    code: `require('dotenv').config();
+
+const express = require('express');
+const cors    = require('cors');
+const prisma  = require('./prisma/client');
+
+const { requireAuth, requireRole } = require('./middleware/authMiddleware');
+const requireAdmin = requireRole('ADMIN');
+
+// Importación de controladores
+const { registrar, login, verUsuarios } = require('./controllers/authController');
+const { obtenerClientes, crearCliente, eliminarCliente, actualizarCliente } = require('./controllers/clientesController');
+const { obtenerHabitaciones, crearHabitacion, ocuparHabitacion, liberarHabitacion, eliminarHabitacion } = require('./controllers/habitacionesController');
+const { crearSolicitud, obtenerSolicitudes, aprobarSolicitud, rechazarSolicitud } = require('./controllers/solicitudesController');
+const { crearFactura, obtenerFacturas, obtenerMisFacturas } = require('./controllers/facturasController');
+
+const app  = express();
+const PORT = process.env.PORT || 3000;
+
+// CORS: permite Live Server y Postman
+const allowedOrigins = [
+  'http://localhost:5500', 'http://127.0.0.1:5500',
+  'http://localhost:5501', 'http://127.0.0.1:5501',
+];
+
+app.use(cors({ origin: function (origin, callback) {
+  if (!origin || allowedOrigins.includes(origin)) callback(null, true);
+  else callback(new Error('CORS bloqueado: ' + origin));
+}, credentials: true }));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ── Autenticación ──────────────────────────────
+app.post('/register', registrar);
+app.post('/login',    login);
+app.get('/usuarios',  requireAdmin, verUsuarios);
+app.get('/me',        requireAuth, (req, res) => res.json({ user: req.user }));
+app.post('/logout',   requireAuth, (req, res) => res.json({ success: true }));
+
+// ── Clientes (solo ADMIN) ──────────────────────
+app.get('/clientes',           requireAdmin, obtenerClientes);
+app.post('/clientes',          requireAdmin, crearCliente);
+app.post('/clientes/eliminar', requireAdmin, eliminarCliente);
+app.put('/clientes/actualizar',requireAdmin, actualizarCliente);
+
+// ── Habitaciones ───────────────────────────────
+app.get('/habitaciones',           obtenerHabitaciones);
+app.post('/habitaciones',          requireAdmin, crearHabitacion);
+app.put('/habitaciones/ocupar',    requireAdmin, ocuparHabitacion);
+app.put('/habitaciones/liberar',   requireAdmin, liberarHabitacion);
+app.post('/habitaciones/eliminar', requireAdmin, eliminarHabitacion);
+
+// ── Solicitudes / Reservas ─────────────────────
+app.post('/solicitudes',              crearSolicitud);
+app.get('/solicitudes',  requireAdmin, obtenerSolicitudes);
+app.put('/solicitudes/aprobar/:id',   requireAdmin, aprobarSolicitud);
+app.put('/solicitudes/rechazar/:id',  requireAdmin, rechazarSolicitud);
+
+// ── Facturas ───────────────────────────────────
+app.get('/facturas',     requireAdmin, obtenerFacturas);
+app.post('/facturas',    crearFactura);
+app.get('/mis-facturas', requireAuth,  obtenerMisFacturas);
+
+// ── Reset total (solo ADMIN) ───────────────────
+app.post('/reset', requireAdmin, async (req, res) => {
+  await prisma.factura.deleteMany();
+  await prisma.solicitud.deleteMany();
+  await prisma.habitacion.deleteMany();
+  await prisma.cliente.deleteMany();
+  res.json({ mensaje: 'Sistema reiniciado' });
+});
+
+app.listen(PORT, () => console.log(\`🚀 Servidor en http://127.0.0.1:\${PORT}\`));`
+  },
+  authMiddleware: {
+    name: 'authMiddleware.js',
+    path: 'backend/middleware / authMiddleware.js',
+    role: 'Middleware',
+    code: `const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'TuClaveSecretaSuperSegura';
+
+// ── requireAuth: verifica que el token JWT sea válido ──
+const requireAuth = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+
+  if (!token) return res.status(401).json({ error: 'No autorizado' });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded; // { id, correo, role, nombre }
+    return next();
+  } catch (error) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+};
+
+// ── requireRole: bloquea si el usuario no tiene el rol requerido ──
+const requireRole = (roles) => {
+  const allowed = Array.isArray(roles) ? roles : [roles];
+
+  return (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) return res.status(401).json({ error: 'No autorizado' });
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      req.user = decoded;
+
+      if (!allowed.includes(decoded.role)) {
+        return res.status(403).json({ error: 'Acceso denegado' });
+      }
+      return next();
+    } catch (error) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+  };
+};
+
+module.exports = { requireAuth, requireRole };`
+  },
+  authController: {
+    name: 'authController.js',
+    path: 'backend/controllers / authController.js',
+    role: 'Controller',
+    code: `const bcrypt = require('bcrypt');
+const jwt    = require('jsonwebtoken');
+const prisma = require('../prisma/client');
+
+const SALT_ROUNDS = 10;
+const JWT_SECRET  = process.env.JWT_SECRET || 'TuClaveSecretaSuperSegura';
+
+// ── 1. REGISTRAR ──────────────────────────────────────────
+const registrar = async (req, res) => {
+  const { nombre, correo, password, nombre_completo, usuario } = req.body;
+
+  const nombreFinal = (nombre ?? nombre_completo ?? '').trim();
+  const correoFinal = (correo ?? usuario ?? '').trim();
+
+  if (!nombreFinal || !correoFinal || !password)
+    return res.status(400).json({ success: false, error: 'Faltan datos' });
+
+  const yaExiste = await prisma.usuario.findUnique({ where: { correo: correoFinal } });
+  if (yaExiste)
+    return res.status(400).json({ success: false, error: 'El correo ya está registrado' });
+
+  const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+  const nuevo = await prisma.usuario.create({
+    data: { nombre: nombreFinal, correo: correoFinal, password: hashedPassword, role: 'USER' },
+    select: { id: true, nombre: true, correo: true, role: true }
+  });
+
+  const token = jwt.sign(
+    { id: nuevo.id, correo: nuevo.correo, role: nuevo.role, nombre: nuevo.nombre },
+    JWT_SECRET, { expiresIn: '8h' }
+  );
+
+  return res.json({ success: true, token, usuario: nuevo, nombre_completo: nuevo.nombre });
+};
+
+// ── 2. LOGIN ──────────────────────────────────────────────
+const login = async (req, res) => {
+  const { usuario, correo, password } = req.body;
+  const correoFinal = (correo ?? usuario ?? '').trim();
+
+  if (!correoFinal || !password)
+    return res.status(400).json({ success: false, error: 'Faltan datos' });
+
+  const usuarioDb = await prisma.usuario.findUnique({ where: { correo: correoFinal } });
+
+  if (!usuarioDb || !(await bcrypt.compare(password, usuarioDb.password)))
+    return res.status(401).json({ success: false, error: 'Credenciales incorrectas' });
+
+  const token = jwt.sign(
+    { id: usuarioDb.id, correo: usuarioDb.correo, role: usuarioDb.role, nombre: usuarioDb.nombre },
+    JWT_SECRET, { expiresIn: '8h' }
+  );
+
+  const { password: _, ...sinPassword } = usuarioDb;
+  return res.json({ success: true, token, usuario: sinPassword, nombre_completo: sinPassword.nombre });
+};
+
+// ── 3. VER USUARIOS ───────────────────────────────────────
+const verUsuarios = async (req, res) => {
+  const usuarios = await prisma.usuario.findMany({
+    select: { id: true, nombre: true, correo: true, role: true }
+  });
+  return res.json(usuarios);
+};
+
+module.exports = { registrar, login, verUsuarios };`
+  },
+  clientesController: {
+    name: 'clientesController.js',
+    path: 'backend/controllers / clientesController.js',
+    role: 'Controller',
+    code: `const prisma = require('../prisma/client');
+
+// OBTENER todos los clientes (ordenados por ID)
+const obtenerClientes = async (req, res) => {
+  try {
+    const clientes = await prisma.cliente.findMany({ orderBy: { id: 'asc' } });
+    res.json(clientes);
+  } catch { res.status(500).json({ error: 'Error al obtener clientes' }); }
+};
+
+// CREAR cliente (normaliza el tipo para el enum de Prisma)
+const crearCliente = async (req, res) => {
+  const { nombre, tipo } = req.body;
+  const tipoNormalizado = tipo
+    ? tipo.charAt(0).toUpperCase() + tipo.slice(1).toLowerCase()
+    : 'Normal';
+  try {
+    const cliente = await prisma.cliente.create({ data: { nombre, tipo: tipoNormalizado } });
+    res.json(cliente);
+  } catch { res.status(500).json({ error: 'Error al crear cliente' }); }
+};
+
+// ELIMINAR cliente (usa transacción para liberar habitaciones primero)
+const eliminarCliente = async (req, res) => {
+  const { id } = req.body;
+  try {
+    await prisma.$transaction([
+      // 1. Desasociar habitaciones del cliente
+      prisma.habitacion.updateMany({
+        where: { clienteId: Number(id) },
+        data:  { clienteId: null, estado: 'Libre' }
+      }),
+      // 2. Eliminar el cliente
+      prisma.cliente.delete({ where: { id: Number(id) } })
+    ]);
+    res.json({ mensaje: 'Cliente eliminado correctamente' });
+  } catch { res.status(500).json({ error: 'Error al eliminar cliente' }); }
+};
+
+// ACTUALIZAR tipo de cliente (Normal / Deluxe / VIP)
+const actualizarCliente = async (req, res) => {
+  const { id, tipo } = req.body;
+  try {
+    const cliente = await prisma.cliente.update({
+      where: { id: Number(id) }, data: { tipo }
+    });
+    res.json({ mensaje: 'Cliente actualizado', cliente });
+  } catch { res.status(500).json({ error: 'Error al actualizar cliente' }); }
+};
+
+module.exports = { obtenerClientes, crearCliente, eliminarCliente, actualizarCliente };`
+  },
+  habitacionesController: {
+    name: 'habitacionesController.js',
+    path: 'backend/controllers / habitacionesController.js',
+    role: 'Controller',
+    code: `const prisma = require('../prisma/client');
+
+const MAX_HABITACIONES = 50;
+
+const SERVICIOS_POR_TIPO = {
+  Normal: ['WiFi', 'Baño privado', 'Aire acondicionado'],
+  Deluxe: ['WiFi premium', 'Desayuno incluido', 'Acceso a piscina'],
+  VIP:    ['WiFi premium', 'Desayuno buffet', 'Spa privado']
+};
+
+// OBTENER (incluye nombre del cliente asignado)
+const obtenerHabitaciones = async (req, res) => {
+  const habitaciones = await prisma.habitacion.findMany({
+    include: { cliente: { select: { id: true, nombre: true } } },
+    orderBy: { numero: 'asc' }
+  });
+  const resultado = habitaciones.map(h => ({
+    id: h.id, numero: h.numero, tipo: h.tipo, estado: h.estado,
+    servicios: h.servicios.length > 0 ? h.servicios : SERVICIOS_POR_TIPO[h.tipo] || [],
+    cliente: h.cliente ? h.cliente.nombre : null
+  }));
+  res.json(resultado);
+};
+
+// CREAR (valida límite, tipo y asigna servicios automáticos)
+const crearHabitacion = async (req, res) => {
+  const { numero, tipo, servicios } = req.body;
+  const tipoNorm = (tipo || 'Normal').charAt(0).toUpperCase() + (tipo || 'Normal').slice(1).toLowerCase();
+
+  const total = await prisma.habitacion.count();
+  if (total >= MAX_HABITACIONES)
+    return res.status(400).json({ error: 'Máximo 50 habitaciones permitidas' });
+
+  if (!Object.keys(SERVICIOS_POR_TIPO).includes(tipoNorm))
+    return res.status(400).json({ error: 'Tipo inválido' });
+
+  const serviciosFinales = Array.isArray(servicios) && servicios.length > 0
+    ? servicios : SERVICIOS_POR_TIPO[tipoNorm];
+
+  const habitacion = await prisma.habitacion.create({
+    data: { numero: Number(numero), tipo: tipoNorm, estado: 'Libre', servicios: serviciosFinales }
+  });
+  res.json(habitacion);
+};
+
+// OCUPAR (valida compatibilidad de tipo cliente ↔ habitación)
+const ocuparHabitacion = async (req, res) => {
+  const { numero, cliente_id } = req.body;
+  const cliente    = await prisma.cliente.findUnique({ where: { id: Number(cliente_id) } });
+  const habitacion = await prisma.habitacion.findUnique({ where: { numero: Number(numero) } });
+
+  if (!cliente || !habitacion) return res.json({ error: 'No existe' });
+
+  const cTipo = cliente.tipo.toLowerCase();
+  const hTipo = habitacion.tipo.toLowerCase();
+
+  if (cTipo === 'vip' && hTipo !== 'vip')
+    return res.json({ error: 'VIP solo puede usar habitaciones VIP' });
+  if (cTipo === 'normal' && hTipo === 'vip')
+    return res.json({ error: 'Normal no puede usar habitación VIP' });
+
+  await prisma.habitacion.update({
+    where: { numero: Number(numero) },
+    data:  { estado: 'ocupada', clienteId: Number(cliente_id) }
+  });
+  res.json({ ok: true });
+};
+
+// LIBERAR y ELIMINAR
+const liberarHabitacion = async (req, res) => {
+  await prisma.habitacion.update({ where: { numero: Number(req.body.numero) }, data: { estado: 'Libre', clienteId: null } });
+  res.json({ mensaje: 'Habitación liberada' });
+};
+
+const eliminarHabitacion = async (req, res) => {
+  await prisma.habitacion.delete({ where: { id: Number(req.body.id) } });
+  res.json({ mensaje: 'Habitación eliminada' });
+};
+
+module.exports = { obtenerHabitaciones, crearHabitacion, ocuparHabitacion, liberarHabitacion, eliminarHabitacion };`
+  },
+  solicitudesController: {
+    name: 'solicitudesController.js',
+    path: 'backend/controllers / solicitudesController.js',
+    role: 'Controller',
+    code: `const prisma       = require('../prisma/client');
+const enviarCorreo = require('../utils/mailer');
+
+// CREAR solicitud
+const crearSolicitud = async (req, res) => {
+  const { nombre, correo, telefono, tipo_habitacion } = req.body;
+  const solicitud = await prisma.solicitud.create({
+    data: { nombre, correo, telefono, tipo_habitacion }
+  });
+  res.json({ mensaje: 'Solicitud enviada', solicitud });
+};
+
+// OBTENER todas las solicitudes (Admin)
+const obtenerSolicitudes = async (req, res) => {
+  const solicitudes = await prisma.solicitud.findMany({ orderBy: { id: 'desc' } });
+  res.json(solicitudes);
+};
+
+// APROBAR solicitud (flujo completo)
+const aprobarSolicitud = async (req, res) => {
+  const id = Number(req.params.id);
+  const solicitud = await prisma.solicitud.findUnique({ where: { id } });
+  if (!solicitud) return res.json({ error: 'No encontrada' });
+
+  // Normalizar tipo para el enum de Prisma
+  const mapaTipos = { 'NORMAL': 'Normal', 'DELUXE': 'Deluxe', 'VIP': 'VIP' };
+  const tipoNorm = mapaTipos[solicitud.tipo_habitacion.toUpperCase()] || 'Normal';
+
+  // Buscar habitación libre del tipo solicitado
+  const habitacion = await prisma.habitacion.findFirst({
+    where: { tipo: tipoNorm, estado: 'Libre' }
+  });
+  if (!habitacion) return res.json({ error: 'No hay habitaciones libres de ese tipo' });
+
+  // Crear cliente y asignar habitación
+  const cliente = await prisma.cliente.create({
+    data: { nombre: solicitud.nombre, tipo: tipoNorm }
+  });
+
+  await prisma.habitacion.update({
+    where: { id: habitacion.id },
+    data:  { estado: 'ocupada', clienteId: cliente.id }
+  });
+
+  // Enviar correo de confirmación (no bloquea si falla)
+  try {
+    await enviarCorreo(solicitud.correo, 'Reserva Aprobada',
+      \`Hola \${solicitud.nombre}, tu reserva fue aprobada.\`);
+  } catch (e) { console.error('⚠️ Error correo:', e.message); }
+
+  // Eliminar solicitud procesada
+  await prisma.solicitud.delete({ where: { id } });
+  res.json({ mensaje: 'Solicitud aprobada' });
+};
+
+// RECHAZAR solicitud
+const rechazarSolicitud = async (req, res) => {
+  await prisma.solicitud.delete({ where: { id: Number(req.params.id) } });
+  res.json({ mensaje: 'Solicitud rechazada' });
+};
+
+module.exports = { crearSolicitud, obtenerSolicitudes, aprobarSolicitud, rechazarSolicitud };`
+  },
+  facturasController: {
+    name: 'facturasController.js',
+    path: 'backend/controllers / facturasController.js',
+    role: 'Controller',
+    code: `const prisma = require('../prisma/client');
+
+// CREAR factura (cualquier usuario autenticado o público)
+const crearFactura = async (req, res) => {
+  const { cliente, correo, telefono, servicio, subtotal, iva, total } = req.body;
+  const factura = await prisma.factura.create({
+    data: { cliente, correo, telefono, servicio,
+            subtotal: Number(subtotal), iva: Number(iva), total: Number(total) }
+  });
+  res.json({ mensaje: 'Factura guardada', factura });
+};
+
+// OBTENER TODAS las facturas (solo ADMIN)
+const obtenerFacturas = async (req, res) => {
+  const facturas = await prisma.factura.findMany({ orderBy: { creadoEn: 'desc' } });
+  res.json(facturas);
+};
+
+// OBTENER MIS FACTURAS (usuario autenticado ve solo las suyas)
+const obtenerMisFacturas = async (req, res) => {
+  const correoUsuario = req.user ? req.user.correo : null;
+  if (!correoUsuario)
+    return res.status(401).json({ error: 'No autorizado' });
+
+  const facturas = await prisma.factura.findMany({
+    where: { correo: correoUsuario },
+    orderBy: { creadoEn: 'desc' }
+  });
+  return res.json(facturas);
+};
+
+module.exports = { crearFactura, obtenerFacturas, obtenerMisFacturas };`
+  },
+  authRoutes: {
+    name: 'Routes/auth.js',
+    path: 'backend/Routes / auth.js',
+    role: 'Router',
+    code: `const express = require('express');
+const router  = express.Router();
+
+const { registrar, login, verUsuarios } = require('../controllers/authController');
+
+router.post('/register', registrar);
+router.post('/login',    login);
+router.get('/usuarios',  verUsuarios);
+
+module.exports = router;`
+  },
+  clientesRoutes: {
+    name: 'Routes/clientes.js',
+    path: 'backend/Routes / clientes.js',
+    role: 'Router',
+    code: `const express = require('express');
+const router  = express.Router();
+
+const { obtenerClientes, crearCliente, eliminarCliente, actualizarCliente } =
+  require('../controllers/clientesController');
+
+router.get('/',           obtenerClientes);
+router.post('/',          crearCliente);
+router.post('/eliminar',  eliminarCliente);
+router.put('/actualizar', actualizarCliente);
+
+module.exports = router;`
+  },
+  habitacionesRoutes: {
+    name: 'Routes/habitaciones.js',
+    path: 'backend/Routes / habitaciones.js',
+    role: 'Router',
+    code: `const express = require('express');
+const router  = express.Router();
+
+const { obtenerHabitaciones, crearHabitacion, ocuparHabitacion,
+        liberarHabitacion, eliminarHabitacion } =
+  require('../controllers/habitacionesController');
+
+router.get('/',         obtenerHabitaciones);
+router.post('/',        crearHabitacion);
+router.put('/ocupar',   ocuparHabitacion);
+router.put('/liberar',  liberarHabitacion);
+router.post('/eliminar',eliminarHabitacion);
+
+module.exports = router;`
+  },
+  solicitudesRoutes: {
+    name: 'Routes/solicitudes.js',
+    path: 'backend/Routes / solicitudes.js',
+    role: 'Router',
+    code: `const express = require('express');
+const router  = express.Router();
+
+const { crearSolicitud, obtenerSolicitudes, aprobarSolicitud, rechazarSolicitud } =
+  require('../controllers/solicitudesController');
+
+router.post('/',              crearSolicitud);
+router.get('/',               obtenerSolicitudes);
+router.put('/aprobar/:id',    aprobarSolicitud);
+router.put('/rechazar/:id',   rechazarSolicitud);
+
+module.exports = router;`
+  },
+  facturasRoutes: {
+    name: 'Routes/facturas.js',
+    path: 'backend/Routes / facturas.js',
+    role: 'Router',
+    code: `const express = require('express');
+const router  = express.Router();
+
+const { crearFactura, obtenerFacturas } = require('../controllers/facturasController');
+
+router.get('/',  obtenerFacturas);
+router.post('/', crearFactura);
+
+module.exports = router;`
+  },
+  recoverRoutes: {
+    name: 'Routes/recover.js',
+    path: 'backend/Routes / recover.js',
+    role: 'Router',
+    code: `const express = require('express');
+const router  = express.Router();
+const prisma  = require('../prisma/client');
+
+// Verifica si el correo existe en la base de datos
+router.post('/recover', async (req, res) => {
+  const { usuario, correo } = req.body || {};
+  const correoFinal = (correo || usuario || '').trim();
+
+  if (!correoFinal)
+    return res.status(400).json({ error: 'Faltan datos para recuperar' });
+
+  const user = await prisma.usuario.findUnique({ where: { correo: correoFinal } });
+
+  if (!user)
+    return res.status(404).json({ error: 'No existe la cuenta' });
+
+  // Aquí se podría enviar un email de recuperación
+  return res.json({ mensaje: 'Cuenta verificada' });
+});
+
+module.exports = router;`
+  },
+  schema: {
+    name: 'schema.prisma',
+    path: 'backend/prisma / schema.prisma',
+    role: 'Base de datos',
+    code: `generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role            { ADMIN  USER }
+enum TipoCliente     { Normal Deluxe VIP }
+enum TipoHabitacion  { Normal Deluxe VIP }
+enum EstadoHabitacion{ Libre  ocupada }
+enum EstadoSolicitud { pendiente aprobada rechazada }
+
+model Usuario {
+  id       Int    @id @default(autoincrement())
+  nombre   String
+  correo   String @unique
+  password String
+  role     Role   @default(USER)
+  @@map("usuarios")
+}
+
+model Cliente {
+  id           Int          @id @default(autoincrement())
+  nombre       String
+  tipo         TipoCliente  @default(Normal)
+  habitaciones Habitacion[]
+  @@map("clientes")
+}
+
+model Habitacion {
+  id        Int              @id @default(autoincrement())
+  numero    Int              @unique
+  tipo      TipoHabitacion   @default(Normal)
+  estado    EstadoHabitacion @default(Libre)
+  servicios String[]
+  clienteId Int?
+  cliente   Cliente?         @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  @@map("habitaciones")
+}
+
+model Solicitud {
+  id              Int             @id @default(autoincrement())
+  nombre          String
+  correo          String
+  telefono        String
+  tipo_habitacion String
+  estado          EstadoSolicitud @default(pendiente)
+  creadoEn        DateTime        @default(now())
+  @@map("solicitudes")
+}
+
+model Factura {
+  id       Int      @id @default(autoincrement())
+  cliente  String
+  correo   String
+  telefono String
+  servicio String
+  subtotal Float
+  iva      Float
+  total    Float
+  creadoEn DateTime @default(now())
+  @@map("facturas")
+}`
+  },
+  prismaClient: {
+    name: 'prisma/client.js',
+    path: 'backend/prisma / client.js',
+    role: 'Prisma',
+    code: `const { PrismaClient } = require('@prisma/client');
+
+// Instancia única de Prisma (patrón Singleton)
+const prisma = new PrismaClient();
+
+module.exports = prisma;`
+  },
+  seed: {
+    name: 'prisma/seed.js',
+    path: 'backend/prisma / seed.js',
+    role: 'Seed',
+    code: `const bcrypt = require('bcrypt');
+const prisma  = require('./client');
+
+async function main() {
+  console.log('🌱 Iniciando seed...');
+
+  // Limpiar toda la BD antes de poblar
+  await prisma.factura.deleteMany();
+  await prisma.solicitud.deleteMany();
+  await prisma.habitacion.deleteMany();
+  await prisma.cliente.deleteMany();
+  await prisma.usuario.deleteMany();
+
+  // Crear usuario Admin con contraseña hasheada
+  const hashedPassword = await bcrypt.hash('1234', 10);
+  await prisma.usuario.create({
+    data: { nombre: 'Administrador', correo: 'admin@hotel.com',
+            password: hashedPassword, role: 'ADMIN' }
+  });
+
+  // Crear habitaciones iniciales con sus servicios
+  const habitaciones = [
+    { numero: 101, tipo: 'Normal', servicios: ['WiFi', 'Baño privado', 'Aire acondicionado'] },
+    { numero: 102, tipo: 'Normal', servicios: ['WiFi', 'Baño privado', 'Aire acondicionado'] },
+    { numero: 201, tipo: 'Deluxe', servicios: ['WiFi premium', 'Desayuno incluido', 'Acceso a piscina'] },
+    { numero: 202, tipo: 'Deluxe', servicios: ['WiFi premium', 'Desayuno incluido', 'Acceso a piscina'] },
+    { numero: 301, tipo: 'VIP',    servicios: ['WiFi premium', 'Desayuno buffet', 'Spa privado'] },
+    { numero: 302, tipo: 'VIP',    servicios: ['WiFi premium', 'Desayuno buffet', 'Spa privado'] },
+  ];
+
+  for (const h of habitaciones) {
+    await prisma.habitacion.create({ data: h });
+  }
+
+  console.log('✅ Seed completado: admin@hotel.com / 1234 — 6 habitaciones');
+}
+
+main()
+  .catch(e => { console.error('❌', e); process.exit(1); })
+  .finally(() => prisma.$disconnect());`
+  },
+  mailer: {
+    name: 'mailer.js',
+    path: 'backend/utils / mailer.js',
+    role: 'Utilidad',
+    code: `const nodemailer = require('nodemailer');
+
+// Credenciales desde variables de entorno (.env), nunca hardcodeadas
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS
+  }
+});
+
+// Función async con try/catch: si Gmail falla, el servidor NO se cae
+const enviarCorreo = async (destinatario, asunto, texto) => {
+  try {
+    await transporter.sendMail({
+      from: \`"Hotel Transilvania" <\${process.env.GMAIL_USER}>\`,
+      to:      destinatario,
+      subject: asunto,
+      text:    texto
+    });
+    console.log(\`✅ Correo enviado a \${destinatario}\`);
+  } catch (error) {
+    // Solo loguea el error — el servidor sigue funcionando
+    console.error(\`⚠️ No se pudo enviar correo: \${error.message}\`);
+  }
+};
+
+module.exports = enviarCorreo;`
+  }
+};
+
+let currentFile = null;
+
+function selectFile(key) {
+  currentFile = key;
+  const file = FILES[key];
+
+  // Update sidebar active state
+  document.querySelectorAll('.file-btn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+
+  // Show file view
+  document.getElementById('emptyState').style.display = 'none';
+  const fv = document.getElementById('fileView');
+  fv.style.display = 'flex';
+
+  // Set file info
+  document.getElementById('filePathName').textContent = file.name;
+
+  // Show code
+  document.getElementById('codeDisplay').textContent = file.code;
+
+  // Reset explain panel
+  document.getElementById('explainPlaceholder').style.display = 'flex';
+  document.getElementById('explainContent').classList.remove('visible');
+  document.getElementById('explainContent').innerHTML = '';
+  document.getElementById('loadingBar').classList.remove('active');
+  document.getElementById('btnExplain').disabled = false;
+  document.getElementById('btnText').textContent = '✨ Explicar para defensa';
+  document.getElementById('spinner').classList.remove('active');
+}
+
+async function explainFile() {
+  if (!currentFile) return;
+  const file = FILES[currentFile];
+
+  const btn = document.getElementById('btnExplain');
+  btn.disabled = true;
+  document.getElementById('btnText').textContent = 'Analizando...';
+  document.getElementById('spinner').classList.add('active');
+  document.getElementById('loadingBar').classList.add('active');
+  document.getElementById('explainPlaceholder').style.display = 'none';
+  document.getElementById('explainContent').classList.remove('visible');
+  document.getElementById('explainContent').innerHTML = '';
+
+  const prompt = `Eres un tutor de programación que ayuda a estudiantes a defender su proyecto de un sistema de hotel (Node.js + Express + Prisma + PostgreSQL).
+
+Analiza este archivo del backend:
+
+ARCHIVO: ${file.name}
+ROL: ${file.role}
+CÓDIGO:
+\`\`\`javascript
+${file.code}
+\`\`\`
+
+Responde SOLO con JSON con este formato exacto (sin markdown, sin backticks, solo JSON puro):
+{
+  "resumen": "2-3 oraciones explicando qué hace este archivo en el sistema",
+  "responsabilidad": "una oración sobre el rol específico de este archivo en la arquitectura",
+  "conceptosClave": ["concepto1", "concepto2", "concepto3"],
+  "flujo": "explicación del flujo de datos paso a paso (3-5 pasos)",
+  "decisionesImportantes": ["decisión de diseño 1", "decisión de diseño 2"],
+  "preguntasPosibles": [
+    {"pregunta": "¿Por qué usaron X?", "respuesta": "Porque permite Y..."},
+    {"pregunta": "¿Cómo funciona Z?", "respuesta": "Z funciona así..."},
+    {"pregunta": "¿Qué pasa si W?", "respuesta": "Si W ocurre..."}
+  ]
+}`;
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content.map(i => i.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+
+    renderExplanation(parsed);
+  } catch (err) {
+    document.getElementById('explainContent').innerHTML = `
+      <div class="section-card">
+        <div class="section-card-header" style="color:var(--red)">❌ Error</div>
+        <div class="section-card-body">No se pudo conectar con la IA. Verifica tu conexión.</div>
+      </div>`;
+    document.getElementById('explainContent').classList.add('visible');
+  } finally {
+    btn.disabled = false;
+    document.getElementById('btnText').textContent = '✨ Explicar para defensa';
+    document.getElementById('spinner').classList.remove('active');
+    document.getElementById('loadingBar').classList.remove('active');
+  }
+}
+
+function renderExplanation(data) {
+  const el = document.getElementById('explainContent');
+
+  el.innerHTML = `
+    <div class="section-card">
+      <div class="section-card-header" style="color:var(--blue)">📖 ¿Qué hace este archivo?</div>
+      <div class="section-card-body">${data.resumen}</div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-card-header" style="color:var(--green)">🎯 Su responsabilidad</div>
+      <div class="section-card-body">${data.responsabilidad}</div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-card-header" style="color:var(--purple)">🧠 Conceptos clave</div>
+      <div class="section-card-body">
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${data.conceptosClave.map(c => `<span class="badge purple">${c}</span>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-card-header" style="color:var(--yellow)">🔄 Flujo de datos</div>
+      <div class="section-card-body">${data.flujo}</div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-card-header" style="color:var(--accent2)">⚙️ Decisiones de diseño</div>
+      <div class="section-card-body">
+        <ul class="points">
+          ${data.decisionesImportantes.map(d => `<li>${d}</li>`).join('')}
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-card-header" style="color:var(--red)">❓ Preguntas que puede hacer el profesor</div>
+      <div class="section-card-body" style="padding:0">
+        ${data.preguntasPosibles.map(qa => `
+          <div class="qa-item" style="margin:12px;margin-bottom:0">
+            <div class="qa-question">❓ ${qa.pregunta}</div>
+            <div>${qa.respuesta}</div>
+          </div>
+        `).join('')}
+        <div style="height:12px"></div>
+      </div>
+    </div>
+  `;
+
+  el.classList.add('visible');
+  el.scrollTop = 0;
+}
+</script>
+</body>
+</html>
